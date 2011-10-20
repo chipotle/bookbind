@@ -2,6 +2,8 @@
 import sys
 import os
 import zipfile
+import uuid
+from datetime import datetime
 
 import yaml
 from markdown import markdown
@@ -45,7 +47,8 @@ class Binder:
     manifest = None
     source_dir = None
     env = None
-
+    
+    DATE_FORMATS = [ '%B %Y', '%b %Y', '%B, %Y', '%b, %Y', '%Y-%b', '%Y-%m' ]
     
     def __init__(self, source_dir=None, config=False):
         self.source_dir = source_dir
@@ -104,9 +107,65 @@ class Binder:
 
     @manifest_required
     def generate_metadata(self):
+        """Produce Dublin Core metadata elements from the manifest."""
+        metadata = self.manifest['metadata']
         items = []
-        for elem, value in self.manifest['metadata'].items():
-            items.append('<dc:' + elem + '>' + value + '</dc:' + elem + '>')
+        flip = lambda x: ((x + ',').split(',')[1].rstrip() + ' ' +
+                         (x + ',').split(',')[0].lstrip()).strip()
+        if not metadata.has_key('uuid') and not metadata.has_key('isbn'):
+            metadata['uuid'] = uuid.uuid4().urn
+        if not metadata.has_key('language'):
+            metadata['language'] = 'en'
+        for elem, value in metadata.items():
+            attr = []
+            if elem == 'author':
+                elem = 'creator'
+                attr.append('opf:file-as="' + value + '"')
+                attr.append('role="aut"')
+                value = flip(value)
+            elif elem == 'editor':
+                elem = 'contributor'
+                attr.append('opf:file-as="' + value + '"')
+                attr.append('role="edt"')
+                value = flip(value)
+            elif elem == 'publisher-person':
+                elem = 'contributor'
+                attr.append('opf:file-as="' + value + '"')
+                attr.append('role="pbl"')
+                value = flip(value)
+            elif elem == 'designer':
+                elem = 'contributor'
+                attr.append('opf:file-as="' + value + '"')
+                attr.append('role="bkd"')
+                value = flip(value)
+            elif elem == 'uuid':
+                elem = 'identifier'
+                attr.append('id="bookid"')
+                attr.append('opf:scheme="UUID"')
+            elif elem == 'isbn':
+                elem = 'identifier'
+                attr.append('id="bookid"')
+                attr.append('opf:scheme="ISBN"')
+                if value.startswith('urn:') is False:
+                    value = 'urn:isbn:' + value
+                value = value.translate(None, '- ')
+            elif elem == 'date':
+                for format in self.DATE_FORMATS:
+                    new_val = None
+                    try:
+                        dt = datetime.strptime(value, format)
+                        new_val = dt.strftime('%Y-%m')
+                        break
+                    except ValueError:
+                        pass
+                if new_val is None:
+                    raise ValueError()
+                value = new_val
+            attrs = ' '.join(attr)
+            if attrs != '':
+                attrs = ' ' + attrs
+            items.append('<dc:' + elem + attrs + '>' + value +
+                         '</dc:' + elem + '>')
         return items
     
     
@@ -151,8 +210,8 @@ class Binder:
                 'META-INF/container.xml')
         epub.writestr('OEBPS/content.opf', self.generate_opf())
         epub.writestr('OEBPS/toc.ncx', self.generate_toc())
-        
         epub.close()
+        print self.manifest['book']
     
 
 
