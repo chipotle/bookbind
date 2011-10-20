@@ -1,15 +1,4 @@
 #!/usr/bin/env python
-
-# steps:
-# - take a directory name to "bind" on the command line
-# - read the manifest.yaml file from that directory
-# - create a new epub directory
-# - copy static files / make directory structure
-# - create manifest and TOC files based on the yaml
-# - convert the individual chapters based on the templates/css specified
-#   - must know whether an HTML file is full or partial...
-#   - ...and run "full" files through HTML Tidy
-
 import sys
 import os
 import zipfile
@@ -21,6 +10,7 @@ from jinja2 import Environment, FileSystemLoader, exceptions as JE
 
 
 def manifest_required(fn):
+    """Decorator for functions that require the manifest to be set."""
     def _wrapper(self, *args, **kwargs):
         if self.manifest is None:
             raise BinderError(BinderError.NO_MANIFEST_SET, 'No manifest set')
@@ -54,18 +44,31 @@ class Binder:
     }
     manifest = None
     source_dir = None
+    env = None
+
     
-    def __init__(self, source_dir=None):
+    def __init__(self, source_dir=None, config=False):
+        self.source_dir = source_dir
+        if config:
+            self.load_config(config, silent=True)
+            self.env = Environment(loader=FileSystemLoader(
+                    self.config['templates']))
+
+
+    def load_config(self, config_filename, silent=False):
         try:
-            config_file = open('~/.bookbindrc')
+            config_file = open(config_filename)
             self.config = yaml.load(config_file.read())
             config_file.close()
-        except:
-            print "(No valid config file, using defaults)"
-        self.source_dir = source_dir
+        except Exception as e:
+            if silent is False:
+                raise e
+            else:
+                sys.exc_clear()
 
 
-    def load_manifest(self):
+    def load_manifest(self, manifest=None):
+        """Load the manifest.yaml file from the source directory."""
         if self.source_dir is None:
             raise BinderError(BinderError.NO_SOURCE_SET,
                 'You must set a source directory.')
@@ -80,25 +83,68 @@ class Binder:
             manifest_file = open(self.source_dir + '/manifest.yaml')
             self.manifest = yaml.load(manifest_file.read())
             manifest_file.close()
-        except IOError as e:
+        except IOError:
             raise BinderError(BinderError.NO_MANIFEST,
                 'Error reading manifest.yaml file.')
 
 
+    def templatize(self, template, context):
+        tpl = self.env.get_template(template)
+        output = tpl.render(context)
+        return output.encode('utf_8')
+
+
     @manifest_required
     def generate_opf(self):
-        return "Foobar"
+        return self.templatize('content.opf', {
+            'metadata': self.generate_metadata(),
+            'manifest': self.generate_manifest_items(),
+            'spine': self.generate_spine_items()
+        })
 
+    @manifest_required
+    def generate_metadata(self):
+        items = []
+        for elem, value in self.manifest['metadata'].items():
+            items.append('<dc:' + elem + '>' + value + '</dc:' + elem + '>')
+        return items
+    
+    
+    @manifest_required
+    def generate_manifest_items(self):
+        items = [
+            '<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>'
+        ]
+        return items
+    
+    
+    @manifest_required
+    def generate_spine_items(self):
+        items = [
+            '<itemref idref="FooBar"/>'
+        ]
+        return items
+    
 
     @manifest_required
     def generate_toc(self): 
         return "Foobar"
 
+# steps:
+# - take a directory name to "bind" on the command line
+# - read the manifest.yaml file from that directory
+# - create a new epub directory
+# - copy static files / make directory structure
+# - create manifest and TOC files based on the yaml
+# - convert the individual chapters based on the templates/css specified
+#   - must know whether an HTML file is full or partial...
+#   - ...and run "full" files through HTML Tidy
 
-    def make_book(self):
+    def make_book(self, outfile=None):
         """Main entry."""
-        epub = zipfile.ZipFile(self.source_dir + '.epub', 'w',
-                zipfile.ZIP_DEFLATED)
+        if outfile is None:
+            outfile = self.source_dir
+        epub = zipfile.ZipFile(outfile + '.epub', 'w', zipfile.ZIP_DEFLATED)
         
         epub.writestr('mimetype', 'application/epub+zip', zipfile.ZIP_STORED)
         epub.write(self.config['static'] + '/container.xml',
@@ -125,7 +171,7 @@ if __name__ == '__main__':
     source_dir = sys.argv[1]
     
     try:
-        binder = Binder(source_dir)
+        binder = Binder(source_dir, '~/.bookbindrc')
         binder.load_manifest()
         binder.make_book()
     except BinderError as e:
