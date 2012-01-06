@@ -1,27 +1,25 @@
-# The only required metadata pieces are 'title' and author.' We may need a
-# better way to handle all the Dublin Core stuff here like contributors,
-# illustrators, etc. It will default to English language and default to
-# its own UUID if none is specified. We need a way to handle ISBNs as well
-# as the "file-as"/"role" attributes.
+# The only required metadata pieces are title and author. Names should be
+# in "Last, First" style as shown below; they will be flipped to First Last
+# order when appropriate. If you do not specify a language, the default will
+# be English. If you do not specify either a UUID or an ISBN, a UUID will
+# automatically be generated.
 
 metadata:
-  title: Why Coyotes Howl
+  title: My Great Book
   author: Martin, Watts
-  editor: Susman, Tim
-  rights: Copyright © 2011 Watts Martin. All Rights Reserved.
-  publisher: Sofawolf Press
-  source: http://www.sofawolf.com/
+  rights: Copyright © 2012 Watts Martin. All Rights Reserved.
+  publisher: Banana Press
+  source: http://www.not-a-real-url.com/
   date: October 2011
-  isbn: 0-9712670-7-3
 
 # The cover can be an image file or an XHTML file. If it's an image file,
 # it will have an XHTML companion file automatically generated. This is an
-# optional parameter.
-# cover: coyotes-howl.jpg
+# optional parameter. This is currently unimplemented.
+
+cover: coyotes-howl.jpg
 
 # default stylesheet used for template rendering if an individual file
-# doesn't override it. This style sheet must be listed in assets or be
-# in BookBind's library.
+# doesn't override it.
 
 stylesheet: "styles/default.css"
 
@@ -34,15 +32,18 @@ book:
   -
     file: title-page.xhtml
   -
-    title: "Why Coyotes Howl"
-    file: why_coyotes_howl.md
+    title: "Chapter 1"
+    file: chapter-1.md
   -
-    title: "Dreams Are For Vixens"
-    file: dreams-are-for-vixens.md
+    title: "Chapter 2"
+    file: chapter-2.md
+
+# All assets to be packed into the book -- which includes anything that
+# hasn't been defined yet -- should be listed below. Currently you must 
+# specify each one as a [ filename, mimetype ] pair.
 
 assets:
-  - styles:
-      - [ default.css, text/css ]
+  - styles: [ default.css ]
   - images:
-      - [ foo1.jpg, image/jpeg ]
-      - [ foo2.jpg, image/jpeg ]
+      - foo1.jpg
+      - foo2.jpg
