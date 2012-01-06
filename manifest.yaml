@@ -1,0 +1,48 @@
+# The only required metadata pieces are 'title' and author.' We may need a
+# better way to handle all the Dublin Core stuff here like contributors,
+# illustrators, etc. It will default to English language and default to
+# its own UUID if none is specified. We need a way to handle ISBNs as well
+# as the "file-as"/"role" attributes.
+
+metadata:
+  title: Why Coyotes Howl
+  author: Martin, Watts
+  editor: Susman, Tim
+  rights: Copyright © 2011 Watts Martin. All Rights Reserved.
+  publisher: Sofawolf Press
+  source: http://www.sofawolf.com/
+  date: October 2011
+  isbn: 0-9712670-7-3
+
+# The cover can be an image file or an XHTML file. If it's an image file,
+# it will have an XHTML companion file automatically generated. This is an
+# optional parameter.
+# cover: coyotes-howl.jpg
+
+# default stylesheet used for template rendering if an individual file
+# doesn't override it. This style sheet must be listed in assets or be
+# in BookBind's library.
+
+stylesheet: "styles/default.css"
+
+# The actual book contents. This will be used to build the manifest and
+# the toc.ncx file. If you don't give a title, 'linear=no' is assumed; you
+# can specify linear explicitly if you want. (Maybe we can give this a less
+# geeky name, too.) An XHTML/HTML file will not be processed by BookBind.
+
+book:
+  -
+    file: title-page.xhtml
+  -
+    title: "Why Coyotes Howl"
+    file: why_coyotes_howl.md
+  -
+    title: "Dreams Are For Vixens"
+    file: dreams-are-for-vixens.md
+
+assets:
+  - styles:
+      - [ default.css, text/css ]
+  - images:
+      - [ foo1.jpg, image/jpeg ]
+      - [ foo2.jpg, image/jpeg ]

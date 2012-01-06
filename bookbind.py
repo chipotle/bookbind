@@ -3,6 +3,7 @@ import sys
 import os
 import zipfile
 import uuid
+import subprocess
 from datetime import datetime
 
 import yaml
@@ -19,6 +20,7 @@ def manifest_required(fn):
         return fn(self, *args, **kwargs)
     return _wrapper
 
+
 class BinderError(Exception):
     """Exception class. Use constants below for error handling."""
     NO_FILE = 100
@@ -26,6 +28,7 @@ class BinderError(Exception):
     NO_MANIFEST = 102
     NO_SOURCE_SET = 103
     NO_MANIFEST_SET = 104
+    WEIRD_FILE = 105
     
     def __init__(self, code, msg):
         self.code = code
@@ -70,7 +73,7 @@ class Binder:
                 sys.exc_clear()
 
 
-    def load_manifest(self, manifest=None):
+    def load_manifest(self):
         """Load the manifest.yaml file from the source directory."""
         if self.source_dir is None:
             raise BinderError(BinderError.NO_SOURCE_SET,
@@ -119,29 +122,33 @@ class Binder:
         for elem, value in metadata.items():
             attr = []
             if elem == 'author':
+                self.config['author'] = value
                 elem = 'creator'
                 attr.append('opf:file-as="' + value + '"')
-                attr.append('role="aut"')
+                attr.append('opf:role="aut"')
                 value = flip(value)
             elif elem == 'editor':
                 elem = 'contributor'
                 attr.append('opf:file-as="' + value + '"')
-                attr.append('role="edt"')
+                attr.append('opf:role="edt"')
                 value = flip(value)
             elif elem == 'publisher-person':
                 elem = 'contributor'
                 attr.append('opf:file-as="' + value + '"')
-                attr.append('role="pbl"')
+                attr.append('opf:role="pbl"')
                 value = flip(value)
             elif elem == 'designer':
                 elem = 'contributor'
                 attr.append('opf:file-as="' + value + '"')
-                attr.append('role="bkd"')
+                attr.append('opf:role="bkd"')
                 value = flip(value)
+            elif elem == 'title':
+                self.config['title'] = value
             elif elem == 'uuid':
                 elem = 'identifier'
                 attr.append('id="bookid"')
                 attr.append('opf:scheme="UUID"')
+                self.config['uid'] = value
             elif elem == 'isbn':
                 elem = 'identifier'
                 attr.append('id="bookid"')
@@ -149,6 +156,7 @@ class Binder:
                 if value.startswith('urn:') is False:
                     value = 'urn:isbn:' + value
                 value = value.translate(None, '- ')
+                self.config['uid'] = value
             elif elem == 'date':
                 for format in self.DATE_FORMATS:
                     new_val = None
@@ -171,23 +179,108 @@ class Binder:
     
     @manifest_required
     def generate_manifest_items(self):
+        # loop through self.manifest['book']. This needs to include the CSS
+        # files and any other assets, although the order isn't important.
         items = [
             '<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>'
         ]
+        for chapter in self.manifest['book']:
+            id = self.make_id(chapter['file'])
+            items.append('<item id="' + id + '" href="' + id +
+                '.xhtml" media-type="application/xhtml+xml"/>')
+        if self.manifest.has_key('assets'):
+            for asset in self.manifest['assets']:
+                for asset_item in asset.items():
+                    asset_kind = asset_item[0]
+                    asset_list = asset_item[1]
+                    for i in asset_list:
+                        name = i[0]
+                        type = i[1]
+                        id = (asset_kind + '_' + name.split('.')[0]).lower().strip()
+                        items.append('<item id="' + id + '" href="' + asset_kind +
+                            '/' + name + '" media-type="' + type + '"/>')
         return items
     
     
+    def make_id(self, x):
+        filename, file_ext = os.path.splitext(x)
+        return filename.lower().strip()
+
+    
     @manifest_required
     def generate_spine_items(self):
-        items = [
-            '<itemref idref="FooBar"/>'
-        ]
+        items = []
+        for chapter in self.manifest['book']:
+            id = self.make_id(chapter['file'])
+            items.append('<itemref idref="' + id + '"/>')
         return items
     
 
     @manifest_required
     def generate_toc(self): 
-        return "Foobar"
+        return self.templatize('toc.ncx', {
+            'title': self.config['title'],
+            'author': self.config['author'],
+            'uid': self.config['uid'],
+            'navmap': self.generate_navmap()
+        })
+    
+    
+    @manifest_required
+    def generate_navmap(self):
+        items = []
+        for chapter in self.manifest['book']:
+            if chapter.has_key('title') and (not chapter.has_key('linear') or chapter['linear'] != False):
+                id = self.make_id(chapter['file'])
+                items.append({
+                    'file': id + '.xhtml',
+                    'title': chapter['title'],
+                    'id': id
+                })
+        return items
+    
+    
+    @manifest_required
+    def generate_chapter(self, chapter):
+        html = False
+        filename, file_ext = os.path.splitext(chapter['file'])
+        file_ext = file_ext.lower()
+        if self.manifest.has_key('stylesheet'):
+            stylesheet = self.manifest['stylesheet']
+        else:
+            stylesheet = 'styles/default.css'
+        if self.config.has_key('processors'):
+            processors = self.config['processors']
+        else:
+            processors = {}
+        if self.manifest.has_key('processors'):
+            processors.append(self.manifest['processors'])
+            content = 'fix this'
+        if processors.has_key(file_ext):
+            command = processors[file_ext].format(chapter['file'])
+            html = subprocess.check_output(command.split())
+            # just return the HTML if it has a doctype, perhaps? But CSS?
+        elif file_ext == '.md' or file_ext == '.txt' or file_ext == '.markdown':
+            file_obj = open(self.source_dir + '/' + chapter['file'])
+            text = file_obj.read()
+            html = smartyPants(markdown(text))
+        elif file_ext == '.xhtml':
+            file_obj = open(self.source_dir + '/' + chapter['file'])
+            return file_obj.read()
+        if html is False:
+            raise BinderError(BinderError.WEIRD_FILE,
+                'Unknown file type: ' + chapter['file'])
+        if self.manifest.has_key('stylesheet'):
+            stylesheet = self.manifest['stylesheet']
+        else:
+            stylesheet = 'styles/default.css'
+        return self.templatize('chapter.xhtml', {
+            'content': html,
+            'stylesheet': stylesheet,
+            'title': chapter.get('title')
+        })
+
+            
 
 # steps:
 # - take a directory name to "bind" on the command line
@@ -200,7 +293,16 @@ class Binder:
 #   - ...and run "full" files through HTML Tidy
 
     def make_book(self, outfile=None):
-        """Main entry."""
+        """Create a complete ePub. This requires the Binder object's manifest
+        property to be set, either by loading a manifest.yaml file with the
+        load_manifest() method or by setting it directly. If the outfile
+        argument is specified, it is used as the output directory and book
+        name (do not include the ".epub" extension, as it will be added);
+        otherwise, the epub file will be created with the same name as the
+        source directory (i.e., if processing ~watts/greatbook/, the output
+        file will be ~watts/greatbook.epub).
+        
+        """
         if outfile is None:
             outfile = self.source_dir
         epub = zipfile.ZipFile(outfile + '.epub', 'w', zipfile.ZIP_DEFLATED)
@@ -210,9 +312,20 @@ class Binder:
                 'META-INF/container.xml')
         epub.writestr('OEBPS/content.opf', self.generate_opf())
         epub.writestr('OEBPS/toc.ncx', self.generate_toc())
+        for chapter in self.manifest['book']:
+            id = self.make_id(chapter['file'])
+            epub.writestr('OEBPS/' + id + '.xhtml',
+                self.generate_chapter(chapter))
+        if self.manifest.has_key('assets'):
+            for asset in self.manifest['assets']:
+                for asset_item in asset.items():
+                    asset_kind = asset_item[0]
+                    asset_list = asset_item[1]
+                    for i in asset_list:
+                        name = asset_kind + '/' + i[0]
+                        file_obj = open(self.source_dir + '/' + name)
+                        epub.writestr('OEBPS/' + name, file_obj.read())
         epub.close()
-        print self.manifest['book']
-    
 
 
 def print_help():
@@ -228,7 +341,6 @@ if __name__ == '__main__':
         sys.exit(0)
     
     source_dir = sys.argv[1]
-    
     try:
         binder = Binder(source_dir, '~/.bookbindrc')
         binder.load_manifest()
