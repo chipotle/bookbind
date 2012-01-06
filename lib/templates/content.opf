@@ -12,4 +12,7 @@
   <spine toc="ncx">
 {% for item in spine %}    {{ item }}
 {% endfor %}  </spine>
-</package>
+{% if cover %}  <guide>
+    <reference href="cover.xhtml" type="cover" title="Cover"/>
+  </guide>
+{% endif %}</package>

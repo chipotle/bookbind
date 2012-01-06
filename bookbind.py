@@ -50,6 +50,9 @@ class Binder:
     manifest = None
     source_dir = None
     env = None
+    images = 'images'
+    styles = 'styles'
+    other = 'assets'
     mime_map = {
         '.js': 'application/javascript',
         '.mp3': 'audio/mpeg',
@@ -213,18 +216,21 @@ class Binder:
             id = self.make_id(chapter['file'])
             items.append('<item id="' + id + '" href="' + id +
                 '.xhtml" media-type="application/xhtml+xml"/>')
-        if self.manifest.has_key('assets'):
-            for asset in self.manifest['assets']:
-                for asset_item in asset.items():
-                    asset_kind = asset_item[0]
-                    asset_list = asset_item[1]
-                    for i in asset_list:
-                        name, file_ext = os.path.splitext(i)
-                        mime_type = self.mime_map.get(file_ext,
-                            'application/octet-stream')
-                        id = (asset_kind + '_' + name).lower().strip()
-                        items.append('<item id="' + id + '" href="' + asset_kind +
-                            '/' + i + '" media-type="' + mime_type + '"/>')
+        items = self.add_assets(items)
+        return items
+    
+    
+    def add_assets(self, items):
+        for dir in (self.images, self.styles, self.other):
+            full_dir = self.source_dir + '/' + dir
+            if os.access(full_dir, os.R_OK):
+                files = os.listdir(full_dir)
+                for f in files:
+                    name, ext = os.path.splitext(f)
+                    mime_type = self.mime_map.get(ext, 'application/octet-stream')
+                    id = (dir + '_' + name).lower().strip()
+                    items.append('<item id="' + id + '" href="' + dir +
+                        '/' + f + '" media-type="' + mime_type + '"/>')
         return items
     
     
@@ -285,7 +291,7 @@ class Binder:
         html = False
         filename, file_ext = os.path.splitext(chapter['file'])
         file_ext = file_ext.lower()
-        stylesheet = self.manifest.get('stylesheet', 'styles/default.css')
+        stylesheet = self.styles + '/' + self.manifest.get('stylesheet', 'default.css')
         processors = self.config.get('processors', {})
         if processors.has_key(file_ext):
             command = processors[file_ext].format(chapter['file'])
@@ -301,10 +307,6 @@ class Binder:
         if html is False:
             raise BinderError(BinderError.WEIRD_FILE,
                 'Unknown file type: ' + chapter['file'])
-        if self.manifest.has_key('stylesheet'):
-            stylesheet = self.manifest['stylesheet']
-        else:
-            stylesheet = 'styles/default.css'
         return self.templatize('chapter.xhtml', {
             'content': html,
             'stylesheet': stylesheet,
@@ -336,15 +338,13 @@ class Binder:
             id = self.make_id(chapter['file'])
             epub.writestr('OEBPS/' + id + '.xhtml',
                 self.generate_chapter(chapter))
-        if self.manifest.has_key('assets'):
-            for asset in self.manifest['assets']:
-                for asset_item in asset.items():
-                    asset_kind = asset_item[0]
-                    asset_list = asset_item[1]
-                    for i in asset_list:
-                        name = asset_kind + '/' + i
-                        file_obj = open(self.source_dir + '/' + name)
-                        epub.writestr('OEBPS/' + name, file_obj.read())
+        for dir in (self.images, self.styles, self.other):
+            full_dir = self.source_dir + '/' + dir
+            if os.access(full_dir, os.R_OK):
+                files = os.listdir(full_dir)
+                for f in files:
+                    file_obj = open(full_dir + '/' + f)
+                    epub.writestr('OEBPS/' + dir + '/' + f, file_obj.read())
         epub.close()
 
 
