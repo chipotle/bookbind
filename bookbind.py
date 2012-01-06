@@ -301,7 +301,8 @@ class Binder:
         html = False
         filename, file_ext = os.path.splitext(chapter['file'])
         file_ext = file_ext.lower()
-        stylesheet = self.styles + '/' + self.manifest.get('stylesheet', 'default.css')
+        stylesheet = self.styles + '/' + chapter.get('stylesheet',
+            self.manifest.get('stylesheet', 'default.css'))
         processors = self.config.get('processors', {})
         if processors.has_key(file_ext):
             command = processors[file_ext].format(chapter['file'])
