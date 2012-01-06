@@ -134,7 +134,8 @@ class Binder:
         return self.templatize('content.opf', {
             'metadata': self.generate_metadata(),
             'manifest': self.generate_manifest_items(),
-            'spine': self.generate_spine_items()
+            'spine': self.generate_spine_items(),
+            'cover': self.manifest.get('cover')
         })
 
     @manifest_required
@@ -203,6 +204,10 @@ class Binder:
                 attrs = ' ' + attrs
             items.append('<dc:' + elem + attrs + '>' + value +
                          '</dc:' + elem + '>')
+        if self.manifest.has_key('cover'):
+            name, ext = os.path.splitext(self.manifest['cover'])
+            id = self.images + '_' + name
+            items.append('<meta name="cover" content="' + id +'"/>')
         return items
     
     
@@ -212,6 +217,8 @@ class Binder:
         items = [
             '<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>'
         ]
+        if self.manifest.has_key('cover'):
+            items.append('<item id="cover" href="cover.xhtml" media-type="application/xhtml+xml"/>')
         for chapter in self.manifest['book']:
             id = self.make_id(chapter['file'])
             items.append('<item id="' + id + '" href="' + id +
@@ -246,7 +253,10 @@ class Binder:
     @manifest_required
     def generate_spine_items(self):
         """Generate the items for the OPF spine element."""
-        items = []
+        if self.manifest.has_key('cover'):
+            items = ['<itemref idref="cover"/>']
+        else:
+            items = []
         for chapter in self.manifest['book']:
             id = self.make_id(chapter['file'])
             items.append('<itemref idref="' + id + '"/>')
@@ -312,7 +322,15 @@ class Binder:
             'stylesheet': stylesheet,
             'title': chapter.get('title')
         })
-            
+    
+    
+    @manifest_required
+    def generate_cover(self):
+        return self.templatize('cover.xhtml', {
+            'image': self.images + '/' + self.manifest['cover'],
+            'title': self.config['title']
+        })
+    
 
     def make_book(self, outfile=None):
         """Create a complete EPUB. This requires the Binder object's manifest
@@ -338,6 +356,8 @@ class Binder:
             id = self.make_id(chapter['file'])
             epub.writestr('OEBPS/' + id + '.xhtml',
                 self.generate_chapter(chapter))
+        if self.manifest.has_key('cover'):
+            epub.writestr('OEBPS/cover.xhtml', self.generate_cover())
         for dir in (self.images, self.styles, self.other):
             full_dir = self.source_dir + '/' + dir
             if os.access(full_dir, os.R_OK):
