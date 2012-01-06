@@ -16,7 +16,7 @@ metadata:
 # it will have an XHTML companion file automatically generated. This is an
 # optional parameter. This is currently unimplemented.
 
-cover: coyotes-howl.jpg
+cover: cover-art.jpg
 
 # default stylesheet used for template rendering if an individual file
 # doesn't override it.
