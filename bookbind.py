@@ -50,6 +50,27 @@ class Binder:
     manifest = None
     source_dir = None
     env = None
+    mime_map = {
+        '.js': 'application/javascript',
+        '.mp3': 'audio/mpeg',
+        '.ogg': 'audio/ogg',
+        '.gif': 'image/gif',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.svg': 'image/svg+xml',
+        '.html': 'application/xhtml+xml', # EPUB 2.x spec = XHTML always!
+        '.txt': 'text/plain',
+        '.xml': 'text/xml',
+        '.css': 'text/css',
+        '.xhtml': 'application/xhtml+xml',
+        '.otf': 'application/x-font-otf',
+        '.ttf': 'application/x-font-ttf',
+        '.mp4': 'audio/mp4',
+        '.m4v': 'video/mpeg4',
+        '.qt': 'video/quicktime',
+        '.webm': 'video/webm',
+    }
     
     DATE_FORMATS = [ '%B %Y', '%b %Y', '%B, %Y', '%b, %Y', '%Y-%b', '%Y-%m' ]
     
@@ -179,8 +200,7 @@ class Binder:
     
     @manifest_required
     def generate_manifest_items(self):
-        # loop through self.manifest['book']. This needs to include the CSS
-        # files and any other assets, although the order isn't important.
+        """Generate items for the OPF manifest element."""
         items = [
             '<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>'
         ]
@@ -194,11 +214,12 @@ class Binder:
                     asset_kind = asset_item[0]
                     asset_list = asset_item[1]
                     for i in asset_list:
-                        name = i[0]
-                        type = i[1]
-                        id = (asset_kind + '_' + name.split('.')[0]).lower().strip()
+                        name, file_ext = os.path.splitext(i)
+                        mime_type = self.mime_map.get(file_ext,
+                            'application/octet-stream')
+                        id = (asset_kind + '_' + name).lower().strip()
                         items.append('<item id="' + id + '" href="' + asset_kind +
-                            '/' + name + '" media-type="' + type + '"/>')
+                            '/' + i + '" media-type="' + mime_type + '"/>')
         return items
     
     
@@ -322,7 +343,7 @@ class Binder:
                     asset_kind = asset_item[0]
                     asset_list = asset_item[1]
                     for i in asset_list:
-                        name = asset_kind + '/' + i[0]
+                        name = asset_kind + '/' + i
                         file_obj = open(self.source_dir + '/' + name)
                         epub.writestr('OEBPS/' + name, file_obj.read())
         epub.close()
