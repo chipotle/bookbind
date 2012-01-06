@@ -12,21 +12,18 @@ metadata:
   source: http://www.not-a-real-url.com/
   date: October 2011
 
-# The cover can be an image file or an XHTML file. If it's an image file,
-# it will have an XHTML companion file automatically generated. This is an
-# optional parameter. This is currently unimplemented.
+# The cover must be an image file. This is an optional parameter. This
+# should be in the images directory.
 
-cover: cover-art.jpg
+cover: cover.jpg
 
-# default stylesheet used for template rendering if an individual file
-# doesn't override it.
+# Default stylesheet used for template rendering.
 
-stylesheet: "styles/default.css"
+stylesheet: default.css
 
 # The actual book contents. This will be used to build the manifest and
-# the toc.ncx file. If you don't give a title, 'linear=no' is assumed; you
-# can specify linear explicitly if you want. (Maybe we can give this a less
-# geeky name, too.) An XHTML/HTML file will not be processed by BookBind.
+# the toc.ncx file. If you don't give a title, 'linear: false' is assumed
+# (this may also be specified explicitly).
 
 book:
   -
@@ -37,22 +34,5 @@ book:
   -
     title: "Chapter 2"
     file: chapter-2.md
+    stylesheet: alternate.css
 
-# All assets to be packed into the book -- which includes anything that
-# hasn't been defined yet -- should be listed below. Assets is a dictionary,
-# and its keys should correspond to directory names while its values should
-# be a list of files in those directories. The example below represents:
-#
-#     styles/
-#       default.css
-#     images/
-#       foo1.jpg
-#       foo2.jpg
-# 
-# TODO having to specify files in these directories violates DRY too much.
-
-assets:
-  - styles: [ default.css ]
-  - images:
-      - foo1.jpg
-      - foo2.jpg
