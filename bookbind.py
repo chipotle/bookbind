@@ -116,6 +116,10 @@ class Binder:
 
 
     def templatize(self, template, context):
+        """Return a rendered template, given the template (as a string)
+        and the context dictionary as parameters.
+        
+        """
         tpl = self.env.get_template(template)
         output = tpl.render(context)
         return output.encode('utf_8')
@@ -123,6 +127,7 @@ class Binder:
 
     @manifest_required
     def generate_opf(self):
+        """Return the complete content.opf file contents."""
         return self.templatize('content.opf', {
             'metadata': self.generate_metadata(),
             'manifest': self.generate_manifest_items(),
@@ -224,12 +229,17 @@ class Binder:
     
     
     def make_id(self, x):
+        """Produce a simple ID from a filename. This may also be used to
+        create filenames at certain places.
+        
+        """
         filename, file_ext = os.path.splitext(x)
         return filename.lower().strip()
 
     
     @manifest_required
     def generate_spine_items(self):
+        """Generate the items for the OPF spine element."""
         items = []
         for chapter in self.manifest['book']:
             id = self.make_id(chapter['file'])
@@ -239,6 +249,7 @@ class Binder:
 
     @manifest_required
     def generate_toc(self): 
+        """Return the contents of the toc.ncx file."""
         return self.templatize('toc.ncx', {
             'title': self.config['title'],
             'author': self.config['author'],
@@ -249,6 +260,7 @@ class Binder:
     
     @manifest_required
     def generate_navmap(self):
+        """Generate the NCX navmap element."""
         items = []
         for chapter in self.manifest['book']:
             if chapter.has_key('title') and (not chapter.has_key('linear') or chapter['linear'] != False):
@@ -263,6 +275,13 @@ class Binder:
     
     @manifest_required
     def generate_chapter(self, chapter):
+        """Return a rendered 'chapter' given a chapter element from the
+        manifest. This uses the extension of the input file to determine the
+        processing (if any) to be done. First external processors defined in
+        the configuration file are checked; otherwise, the internal Markdown
+        processor is used for .md/.txt files. XHTML files are used as-is.
+        
+        """
         html = False
         filename, file_ext = os.path.splitext(chapter['file'])
         file_ext = file_ext.lower()
@@ -271,7 +290,7 @@ class Binder:
         if processors.has_key(file_ext):
             command = processors[file_ext].format(chapter['file'])
             html = subprocess.check_output(command.split())
-            # just return the HTML if it has a doctype, perhaps? But CSS?
+            # TODO handle partial or full HTML output here
         elif file_ext == '.md' or file_ext == '.txt' or file_ext == '.markdown':
             file_obj = open(self.source_dir + '/' + chapter['file'])
             text = file_obj.read()
@@ -291,21 +310,10 @@ class Binder:
             'stylesheet': stylesheet,
             'title': chapter.get('title')
         })
-
             
 
-# steps:
-# - take a directory name to "bind" on the command line
-# - read the manifest.yaml file from that directory
-# - create a new epub directory
-# - copy static files / make directory structure
-# - create manifest and TOC files based on the yaml
-# - convert the individual chapters based on the templates/css specified
-#   - must know whether an HTML file is full or partial...
-#   - ...and run "full" files through HTML Tidy
-
     def make_book(self, outfile=None):
-        """Create a complete ePub. This requires the Binder object's manifest
+        """Create a complete EPUB. This requires the Binder object's manifest
         property to be set, either by loading a manifest.yaml file with the
         load_manifest() method or by setting it directly. If the outfile
         argument is specified, it is used as the output directory and book
@@ -341,7 +349,7 @@ class Binder:
 
 
 def print_help():
-    print "BookBinder 0.1\n"
+    print "BookBinder 0.4\n"
     print "Usage: {} directory\n".format(sys.argv[0])
     print "Create an ePub file from a directory of contents and a YAML manifest file."
     print "Consult the documentation for specifics."
