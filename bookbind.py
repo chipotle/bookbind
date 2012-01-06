@@ -266,17 +266,8 @@ class Binder:
         html = False
         filename, file_ext = os.path.splitext(chapter['file'])
         file_ext = file_ext.lower()
-        if self.manifest.has_key('stylesheet'):
-            stylesheet = self.manifest['stylesheet']
-        else:
-            stylesheet = 'styles/default.css'
-        if self.config.has_key('processors'):
-            processors = self.config['processors']
-        else:
-            processors = {}
-        if self.manifest.has_key('processors'):
-            processors.append(self.manifest['processors'])
-            content = 'fix this'
+        stylesheet = self.manifest.get('stylesheet', 'styles/default.css')
+        processors = self.config.get('processors', {})
         if processors.has_key(file_ext):
             command = processors[file_ext].format(chapter['file'])
             html = subprocess.check_output(command.split())
