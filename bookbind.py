@@ -358,6 +358,13 @@ class Binder:
                 self.generate_chapter(chapter))
         if self.manifest.has_key('cover'):
             epub.writestr('OEBPS/cover.xhtml', self.generate_cover())
+        if self.manifest.has_key('stylesheet'):
+            sheet = '/' + self.styles + '/' + self.manifest['stylesheet']
+            if os.access(self.source_dir + sheet, os.R_OK) is False:
+                epub.write(
+                    self.config['styles'] + '/' + self.manifest['stylesheet'],
+                    'OEBPS/' + sheet
+                )
         for dir in (self.images, self.styles, self.other):
             full_dir = self.source_dir + '/' + dir
             if os.access(full_dir, os.R_OK):
