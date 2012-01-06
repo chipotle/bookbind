@@ -39,8 +39,17 @@ book:
     file: chapter-2.md
 
 # All assets to be packed into the book -- which includes anything that
-# hasn't been defined yet -- should be listed below. Currently you must 
-# specify each one as a [ filename, mimetype ] pair.
+# hasn't been defined yet -- should be listed below. Assets is a dictionary,
+# and its keys should correspond to directory names while its values should
+# be a list of files in those directories. The example below represents:
+#
+#     styles/
+#       default.css
+#     images/
+#       foo1.jpg
+#       foo2.jpg
+# 
+# TODO having to specify files in these directories violates DRY too much.
 
 assets:
   - styles: [ default.css ]
