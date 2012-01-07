@@ -21,12 +21,12 @@ Bookbind's generated files _should_ pass ePubChecker with no warnings or errors.
 
 ## In progress
 
-While Bookbind can be used as-is already, it's missing some functionality (most notably for cover art), not all features have been tested, and there's a lot of rough edges.
+While Bookbind can be used as-is already, it's missing some functionality, not all features have been tested, and there's a lot of rough edges.
 
 The extremely high-level road map:
 
 * v0.5: Feature complete
-* v0.8: PyPI-style packaging and installation
+* v0.8: Test suites
 * v1.0: Full documentation and a good default style or two
 * Future:
     * EPUB 3.0 support

@@ -11,8 +11,8 @@ from markdown import markdown
 from smartypants import smartyPants
 from jinja2 import Environment, FileSystemLoader, exceptions as JE
 
+__VERSION__ = '0.5.0'
 
-__VERSION__ = '0.4.1'
 
 def manifest_required(fn):
     """Decorator for functions that require the manifest to be set."""

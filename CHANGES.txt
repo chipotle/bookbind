@@ -1,1 +1,1 @@
-v0.5, 06 Jan 2012 -- initial release
+v0.5.0, 06 Jan 2012 -- initial release
