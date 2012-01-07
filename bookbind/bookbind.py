@@ -7,7 +7,7 @@ import subprocess
 from datetime import datetime
 
 import yaml
-from markdown import markdown
+from markdown import markdown, MarkdownException
 from smartypants import smartyPants
 from jinja2 import Environment, FileSystemLoader, exceptions as JE
 
@@ -320,12 +320,24 @@ class Binder:
         processors = self.config.get('processors', {})
         if processors.has_key(file_ext):
             command = processors[file_ext].format(chapter['file'])
-            html = subprocess.check_output(command.split())
+            try:
+                html = subprocess.check_output(command.split())
+            except:
+                print "Error running '{}'".format(chapter['file'])
+                sys.exit(1)
             # TODO handle partial or full HTML output here
         elif file_ext == '.md' or file_ext == '.txt' or file_ext == '.markdown':
-            file_obj = open(self.source_dir + '/' + chapter['file'])
-            text = file_obj.read()
-            html = smartyPants(markdown(text))
+            try:
+                file_obj = open(self.source_dir + '/' + chapter['file'])
+                text = file_obj.read()
+            except IOError as e:
+                print e
+                sys.exit(1)
+            try:
+                html = smartyPants(markdown(text))
+            except MarkdownException as e:
+                print "Error processing {} - {}".format(chapter['file'], e)
+                sys.exit(1)
         elif file_ext == '.xhtml':
             file_obj = open(self.source_dir + '/' + chapter['file'])
             return file_obj.read()
