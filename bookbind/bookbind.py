@@ -230,6 +230,13 @@ class Binder:
     
     
     def add_assets(self, items):
+        stylesheet = self.manifest.get('stylesheet', 'default.css')
+        if os.access(self.source_dir + '/' + self.styles + '/' + stylesheet,
+        os.R_OK) is False:
+            name, ext = os.path.splitext(stylesheet)
+            id = (self.styles + '_' + name).lower().strip()
+            items.append('<item id="' + id + '" href="' + self.styles + '/' +
+                stylesheet + '" media-type="text/css"/>')
         for dir in (self.images, self.styles, self.other):
             full_dir = self.source_dir + '/' + dir
             if os.access(full_dir, os.R_OK):
