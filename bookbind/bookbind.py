@@ -217,10 +217,12 @@ class Binder:
     def generate_manifest_items(self):
         """Generate items for the OPF manifest element."""
         items = [
-            '<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>'
+            '<item id="ncx" href="toc.ncx" ' +
+            'media-type="application/x-dtbncx+xml"/>'
         ]
         if self.manifest.has_key('cover'):
-            items.append('<item id="cover" href="cover.xhtml" media-type="application/xhtml+xml"/>')
+            items.append('<item id="cover" href="cover.xhtml" ' +
+                'media-type="application/xhtml+xml"/>')
         for chapter in self.manifest['book']:
             id = self.make_id(chapter['file'])
             items.append('<item id="' + id + '" href="' + id +
@@ -230,6 +232,7 @@ class Binder:
     
     
     def add_assets(self, items):
+        """Add the assets to the manifest item list."""
         stylesheet = self.manifest.get('stylesheet', 'default.css')
         if os.access(self.source_dir + '/' + self.styles + '/' + stylesheet,
         os.R_OK) is False:
@@ -243,7 +246,8 @@ class Binder:
                 files = os.listdir(full_dir)
                 for f in files:
                     name, ext = os.path.splitext(f)
-                    mime_type = self.mime_map.get(ext, 'application/octet-stream')
+                    mime_type = self.mime_map.get(ext,
+                        'application/octet-stream')
                     id = (dir + '_' + name).lower().strip()
                     items.append('<item id="' + id + '" href="' + dir +
                         '/' + f + '" media-type="' + mime_type + '"/>')
@@ -288,7 +292,8 @@ class Binder:
         """Generate the NCX navmap element."""
         items = []
         for chapter in self.manifest['book']:
-            if chapter.has_key('title') and (not chapter.has_key('linear') or chapter['linear'] != False):
+            if chapter.has_key('title') and (not chapter.has_key('linear')
+            or chapter['linear'] != False):
                 id = self.make_id(chapter['file'])
                 items.append({
                     'file': id + '.xhtml',
@@ -336,6 +341,7 @@ class Binder:
     
     @manifest_required
     def generate_cover(self):
+        """Generate a cover wrapper around the supplied cover image."""
         return self.templatize('cover.xhtml', {
             'image': self.images + '/' + self.manifest['cover'],
             'title': self.config['title']
