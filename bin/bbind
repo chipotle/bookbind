@@ -3,7 +3,7 @@ import sys
 from bookbind import bookbind
 
 def print_help():
-    print "BookBinder 0.4\n"
+    print "BookBinder {}\n".format(bookbind.__VERSION__)
     print "Usage: {} directory\n".format(sys.argv[0])
     print "Create an ePub file from a directory of contents and a YAML manifest file."
     print "Consult the documentation for specifics."
