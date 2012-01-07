@@ -19,17 +19,20 @@ The `manifest.yaml` file describes the book's metadata and chapter orders. Consu
 
 Bookbind's generated files _should_ pass ePubChecker with no warnings or errors. Keep in mind that if you include XHTML files, Bookbind will add them to your book as-is, so watch for warnings that they might generate.
 
-## In progress
+## Future Enhancements
 
-While Bookbind can be used as-is already, it's missing some functionality, not all features have been tested, and there's a lot of rough edges.
+Bookbind is currently considered "pre-release" by its author, but it's already capable of generating complete books that pass `epubcheck` 1.0.5's compliance text. The work to do before 1.0 must include:
 
-The extremely high-level road map:
+* Creation of a test suite
+* Ensuring Pandoc and MultiMarkdown can be used as external processors
+* Verification that a `distuils`-created tarball really installs correctly
+* Full documentation file
 
-* v0.5: Feature complete
-* v0.8: Test suites
-* v1.0: Full documentation and a good default style or two
-* Future:
-    * EPUB 3.0 support
-    * KindleGen support
-    * GUI
-    
+At that point, Bookbind will be submitted to PyPI.
+
+Other enhancements under consideration:
+
+* Creating new default styles for the distribution
+* EPUB 3.0 support
+* Optional creation of a hyperlink TOC page for lazy people like me
+* Optional MOBI creation if `kindlegen` is installed
